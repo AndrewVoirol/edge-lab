@@ -1,8 +1,10 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "app": "edge-lab",
   "app_version": "1.0.0",
   "created_at": "REPLACE_AFTER_DEVICE_RUN",
+  "matrix_version": "1",
+  "run_mode": "full",
   "device": {
     "model_identifier": "iPhone17,2",
     "marketing_name": "iPhone 16 Pro Max",
@@ -13,24 +15,6 @@
   },
   "litert_lm_version": "0.12.0",
   "decode_cap": 256,
-  "matrix": [
-    {
-      "preset_id": "gallery_greedy_gpu",
-      "preset_label": "Gallery greedy",
-      "backend": "gpu",
-      "did_fallback": false,
-      "sampler": { "topK": 1, "topP": 1.0, "temperature": 1.0 },
-      "metrics": {
-        "decode_tokens_per_second": 0.0,
-        "prefill_tokens_per_second": 0.0,
-        "ttft_seconds": 0.0,
-        "init_time_seconds": 0.0,
-        "decode_tokens": 256,
-        "thermal_start": "nominal",
-        "thermal_end": "nominal",
-        "memory_delta_mb": 0.0
-      }
-    }
-  ],
-  "_comment": "Replace this file with a real export from Edge Lab on your iPhone before publishing."
+  "matrix": [],
+  "_comment": "After your completed matrix: Share → JSON, or copy from Files/EdgeLabRuns, and replace this file before publishing."
 }

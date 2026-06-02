@@ -12,7 +12,7 @@ Google’s [AI Edge Gallery](https://github.com/google-ai-edge/gallery) ships a 
 
 1. Clone and set up (resolves LiteRT-LM — **required**):
    ```bash
-   git clone https://github.com/andrewvoirol/edge-lab.git
+   git clone https://github.com/AndrewVoirol/edge-lab.git
    cd edge-lab
    ./scripts/setup.sh
    open EdgeLab.xcworkspace   # ← workspace, NOT EdgeLab.xcodeproj

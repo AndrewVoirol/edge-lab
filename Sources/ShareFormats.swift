@@ -54,7 +54,7 @@ enum ShareFormats {
         }
 
         lines.append("")
-        lines.append("Generated with [Edge Lab](https://github.com/andrewvoirol/edge-lab) · [ableandrew.com](https://ableandrew.com)")
+        lines.append("Generated with [Edge Lab](https://github.com/AndrewVoirol/edge-lab) · [ableandrew.com](https://ableandrew.com)")
         return lines.joined(separator: "\n")
     }
 
@@ -102,7 +102,7 @@ enum ShareFormats {
         return """
         Edge Lab: \(bestLine) \(manifest.device.marketingName), \(model), fully local BYOM .litertlm — no cloud. JSON + report in 🧵
 
-        https://github.com/andrewvoirol/edge-lab · https://ableandrew.com
+        https://github.com/AndrewVoirol/edge-lab · https://ableandrew.com
         """
     }
 
