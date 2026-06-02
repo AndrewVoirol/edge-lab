@@ -81,13 +81,15 @@ enum MatrixRunner {
                 onProgress: onProgress
             )
 
+            var initResult: BackendInitResult?
             do {
-                let initResult = try await engine.ensureLoaded(
+                let loaded = try await engine.ensureLoaded(
                     path: modelPath,
                     preferGPU: preset.preferGPU,
                     forceCPU: preset.forceCPU,
                     samplerConfig: preset.samplerConfig
                 )
+                initResult = loaded
 
                 report(
                     runIndex: runIndex,
@@ -99,9 +101,8 @@ enum MatrixRunner {
                     backendGroup: backendGroup,
                     onProgress: onProgress
                 )
-                try await engine.resetConversation()
+                // Warmup is turn 1 (primes BenchmarkInfo). Benchmark must be turn 2 on the same session.
                 try await engine.warmup()
-                try await engine.resetConversation()
 
                 var tokenCount = 0
                 report(
@@ -134,15 +135,21 @@ enum MatrixRunner {
                 ) {}
 
                 let wallClock = CFAbsoluteTimeGetCurrent() - presetStart
+                let backend = loaded.activeBackend
+                let fallback = loaded.didFallback
+                tokenCount = max(tokenCount, engine.lastStreamedTokenCount)
 
                 guard let info = engine.lastBenchmarkInfo else {
+                    let detail = engine.lastStreamedTokenCount > 0
+                        ? "BenchmarkInfo unavailable after \(engine.lastStreamedTokenCount) streamed tokens."
+                        : "BenchmarkInfo unavailable (no tokens streamed — check model/SDK)."
                     let failure = failureResult(
                         preset: preset,
-                        backend: initResult.activeBackend,
-                        fallback: initResult.didFallback,
+                        backend: backend,
+                        fallback: fallback,
                         wallClock: wallClock,
                         engine: engine,
-                        message: "BenchmarkInfo unavailable after run."
+                        message: detail
                     )
                     onResult(failure)
                     continue
@@ -151,8 +158,8 @@ enum MatrixRunner {
                 let success = MatrixRunResult(
                     id: preset.id,
                     preset: preset,
-                    activeBackend: initResult.activeBackend,
-                    didFallback: initResult.didFallback,
+                    activeBackend: backend,
+                    didFallback: fallback,
                     decodeTokensPerSecond: info.lastDecodeTokensPerSecond,
                     prefillTokensPerSecond: info.lastPrefillTokensPerSecond,
                     ttftSeconds: info.timeToFirstTokenInSecond,
@@ -187,8 +194,8 @@ enum MatrixRunner {
                 onResult(
                     failureResult(
                         preset: preset,
-                        backend: "—",
-                        fallback: false,
+                        backend: initResult?.activeBackend ?? "—",
+                        fallback: initResult?.didFallback ?? false,
                         wallClock: wallClock,
                         engine: engine,
                         message: error.localizedDescription

@@ -163,9 +163,10 @@ struct MatrixView: View {
                     .font(.caption2)
                     .frame(width: 32, alignment: .leading)
             } else {
-                Text("err")
+                Text(row.errorMessage.map { String($0.prefix(28)) } ?? "err")
                     .font(.caption2)
                     .foregroundStyle(.red)
+                    .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

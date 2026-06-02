@@ -39,10 +39,10 @@ final class LabEngine {
     private(set) var lastMemoryDeltaMB: Double = 0
     private(set) var lastMemoryStartMB: Double = 0
     private(set) var lastMemoryEndMB: Double = 0
+    private(set) var lastStreamedTokenCount: Int = 0
 
     var isReady: Bool { conversation != nil }
 
-    /// Loads the model only when path or backend (GPU vs CPU) changes.
     func ensureLoaded(
         path: String,
         preferGPU: Bool,
@@ -129,10 +129,7 @@ final class LabEngine {
     func resetConversation() async throws {
         guard let engine else { throw LabEngineError.notInitialized }
 
-        if let task = activeInferenceTask {
-            await task.value
-            activeInferenceTask = nil
-        }
+        await finishActiveInferenceTask()
 
         autoreleasepool {
             withExtendedLifetime(engine) {
@@ -141,6 +138,7 @@ final class LabEngine {
         }
         lastBenchmarkInfo = nil
         lastTokenLatenciesMs = []
+        lastStreamedTokenCount = 0
 
         let config = ConversationConfig(samplerConfig: activeSamplerConfig)
         conversation = try await engine.createConversation(with: config)
@@ -171,6 +169,8 @@ final class LabEngine {
         }
 
         let task = Task { @MainActor [conversation] in
+            defer { self.activeInferenceTask = nil }
+
             let start = DeviceContext.captureSnapshot()
             lastThermalStart = start.thermalLevel
             lastMemoryStartMB = start.availableMemoryMB
@@ -182,13 +182,15 @@ final class LabEngine {
                 for try await chunk in conversation.sendMessageStream(Message(text)) {
                     try Task.checkCancellation()
                     if Task.isCancelled { break }
-                    if let first = chunk.contents.first, case .text(let text) = first {
-                        tokenTimestamps.append(CFAbsoluteTimeGetCurrent())
-                        tokenCount += 1
-                        onToken?(tokenCount)
-                        continuation.yield(text)
-                        if tokenCount >= maxTokens { break }
-                    }
+
+                    guard let piece = Self.text(from: chunk), !piece.isEmpty else { continue }
+
+                    tokenTimestamps.append(CFAbsoluteTimeGetCurrent())
+                    tokenCount += 1
+                    lastStreamedTokenCount = tokenCount
+                    onToken?(tokenCount)
+                    continuation.yield(piece)
+                    if tokenCount >= maxTokens { break }
                 }
 
                 let end = DeviceContext.captureSnapshot()
@@ -205,7 +207,13 @@ final class LabEngine {
                 }
                 lastTokenLatenciesMs = latencies
 
-                lastBenchmarkInfo = try? conversation.getBenchmarkInfo()
+                if ExperimentalFlags.enableBenchmark {
+                    do {
+                        lastBenchmarkInfo = try conversation.getBenchmarkInfo()
+                    } catch {
+                        lastBenchmarkInfo = nil
+                    }
+                }
                 continuation.finish()
             } catch {
                 continuation.finish(throwing: error)
@@ -213,6 +221,24 @@ final class LabEngine {
         }
         activeInferenceTask = task
         return stream
+    }
+
+    /// Extracts streamable text from model chunks (content array or Gemma channels).
+    nonisolated static func text(from message: Message) -> String? {
+        var parts: [String] = []
+        for content in message.contents {
+            if case .text(let text) = content, !text.isEmpty {
+                parts.append(text)
+            }
+        }
+        if !parts.isEmpty {
+            return parts.joined()
+        }
+        if !message.channels.isEmpty {
+            let channelText = message.channels.values.filter { !$0.isEmpty }.joined(separator: " ")
+            return channelText.isEmpty ? nil : channelText
+        }
+        return nil
     }
 
     var medianTokenLatencyMs: Double {
@@ -227,10 +253,7 @@ final class LabEngine {
 
     func shutdown() async {
         activeInferenceTask?.cancel()
-        if let task = activeInferenceTask {
-            _ = await task.result
-            activeInferenceTask = nil
-        }
+        await finishActiveInferenceTask()
         if let engineRef = engine {
             withExtendedLifetime(engineRef) { conversation = nil }
         } else {
@@ -241,6 +264,13 @@ final class LabEngine {
         loadedUsesGPU = nil
         lastBenchmarkInfo = nil
         activeSamplerConfig = nil
+        lastStreamedTokenCount = 0
+    }
+
+    private func finishActiveInferenceTask() async {
+        guard let task = activeInferenceTask else { return }
+        _ = await task.result
+        activeInferenceTask = nil
     }
 
     private func initializeEngine(

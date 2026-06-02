@@ -1,4 +1,5 @@
 import XCTest
+import LiteRTLM
 @testable import EdgeLab
 
 final class MatrixExportTests: XCTestCase {
@@ -74,5 +75,10 @@ final class MatrixExportTests: XCTestCase {
 
     func testPresetCount() {
         XCTAssertEqual(MatrixPreset.all.count, 4)
+    }
+
+    func testTextExtractionFromChannels() {
+        let message = Message(contents: [], channels: ["default": "Hello"])
+        XCTAssertEqual(LabEngine.text(from: message), "Hello")
     }
 }

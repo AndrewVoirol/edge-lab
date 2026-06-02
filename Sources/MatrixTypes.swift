@@ -132,6 +132,7 @@ struct MatrixManifest: Codable, Sendable {
         let backend: String
         let didFallback: Bool
         let sampler: SamplerInfo
+        let error: String?
         let metrics: MetricsInfo?
 
         enum CodingKeys: String, CodingKey {
@@ -140,6 +141,7 @@ struct MatrixManifest: Codable, Sendable {
             case backend
             case didFallback = "did_fallback"
             case sampler
+            case error
             case metrics
         }
 
@@ -216,6 +218,7 @@ extension MatrixManifest {
                         topP: run.preset.topP,
                         temperature: run.preset.temperature
                     ),
+                    error: run.errorMessage,
                     metrics: run.succeeded
                         ? MatrixEntry.MetricsInfo(
                             decodeTokensPerSecond: run.decodeTokensPerSecond,

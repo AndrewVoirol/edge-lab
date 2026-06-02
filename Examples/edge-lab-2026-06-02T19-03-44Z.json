@@ -1,0 +1,64 @@
+{
+  "app" : "edge-lab",
+  "app_version" : "1.0",
+  "created_at" : "2026-06-02T18:58:35Z",
+  "decode_cap" : 256,
+  "device" : {
+    "marketing_name" : "iPhone 16 Pro Max",
+    "model_identifier" : "iPhone17,2",
+    "os_version" : "Version 26.6 (Build 23G5028e)"
+  },
+  "litert_lm_version" : "0.12.0",
+  "matrix" : [
+    {
+      "backend" : "—",
+      "did_fallback" : false,
+      "preset_id" : "gallery_greedy_gpu",
+      "preset_label" : "Gallery greedy",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 1,
+        "topP" : 1
+      }
+    },
+    {
+      "backend" : "—",
+      "did_fallback" : false,
+      "preset_id" : "sdk_default_gpu",
+      "preset_label" : "SDK default",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 64,
+        "topP" : 0.95
+      }
+    },
+    {
+      "backend" : "—",
+      "did_fallback" : false,
+      "preset_id" : "cpu_greedy",
+      "preset_label" : "CPU baseline",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 1,
+        "topP" : 1
+      }
+    },
+    {
+      "backend" : "—",
+      "did_fallback" : false,
+      "preset_id" : "cpu_sampled",
+      "preset_label" : "CPU sampled",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 64,
+        "topP" : 0.95
+      }
+    }
+  ],
+  "matrix_version" : "1",
+  "model" : {
+    "filename" : "gemma-4-E2B-it-web.litertlm"
+  },
+  "run_mode" : "full",
+  "schema_version" : "1.1"
+}

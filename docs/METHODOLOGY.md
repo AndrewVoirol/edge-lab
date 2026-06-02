@@ -17,8 +17,8 @@ Edge Lab’s experiment matrix is designed for **reproducible, shareable** on-de
 1. **One model load per backend group** — GPU presets 1–2 share a single load; CPU presets 3–4 share another. Only sampler settings change between paired presets (faster, fairer comparisons).
 2. Apply preset sampler (topK / topP / temperature) and `resetConversation()`.
 3. Initialize backend (GPU preferred; CPU forced for CPU presets; fallback on failure) when the backend group changes.
-4. Warmup inference (primes `BenchmarkInfo` — nil on first turn without warmup).
-5. `resetConversation()` again for a clean context.
+4. **Warmup** on the current session (turn 1 — primes `BenchmarkInfo`).
+5. **Benchmark on the same session** (turn 2 — do not reset between warmup and benchmark).
 6. Stream benchmark prompt; stop after 256 tokens.
 7. Read `BenchmarkInfo` and device thermal/memory snapshots.
 
