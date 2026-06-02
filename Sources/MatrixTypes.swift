@@ -6,6 +6,7 @@ import LiteRTLM
 struct MatrixPreset: Identifiable, Sendable {
     let id: String
     let label: String
+    let subtitle: String
     let preferGPU: Bool
     let forceCPU: Bool
     let topK: Int
@@ -15,7 +16,8 @@ struct MatrixPreset: Identifiable, Sendable {
     static let all: [MatrixPreset] = [
         MatrixPreset(
             id: "gallery_greedy_gpu",
-            label: "Gallery greedy",
+            label: "Greedy GPU",
+            subtitle: "topK=1 · GPU",
             preferGPU: true,
             forceCPU: false,
             topK: 1,
@@ -24,7 +26,8 @@ struct MatrixPreset: Identifiable, Sendable {
         ),
         MatrixPreset(
             id: "sdk_default_gpu",
-            label: "SDK default",
+            label: "Sampled GPU",
+            subtitle: "topK=64 · GPU",
             preferGPU: true,
             forceCPU: false,
             topK: 64,
@@ -33,7 +36,8 @@ struct MatrixPreset: Identifiable, Sendable {
         ),
         MatrixPreset(
             id: "cpu_greedy",
-            label: "CPU baseline",
+            label: "Greedy CPU",
+            subtitle: "topK=1 · CPU",
             preferGPU: false,
             forceCPU: true,
             topK: 1,
@@ -42,7 +46,8 @@ struct MatrixPreset: Identifiable, Sendable {
         ),
         MatrixPreset(
             id: "cpu_sampled",
-            label: "CPU sampled",
+            label: "Sampled CPU",
+            subtitle: "topK=64 · CPU",
             preferGPU: false,
             forceCPU: true,
             topK: 64,

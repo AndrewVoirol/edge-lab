@@ -10,7 +10,7 @@ struct RunArchiveBundle: Sendable {
         case .json: return jsonURL
         case .markdown: return markdownURL
         case .csv: return csvURL
-        case .tweet, .copySummary: return nil
+        case .tweet, .tweetThread, .copySummary: return nil
         }
     }
 

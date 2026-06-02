@@ -70,7 +70,19 @@ final class MatrixExportTests: XCTestCase {
         )
         XCTAssertFalse(ShareFormats.markdownReport(manifest: manifest).isEmpty)
         XCTAssertTrue(ShareFormats.csvReport(manifest: manifest).contains("preset_id"))
-        XCTAssertTrue(ShareFormats.tweetText(manifest: manifest).contains("Edge Lab"))
+        let post = ShareFormats.tweetPostText(manifest: manifest)
+        XCTAssertTrue(post.contains("Edge Lab"))
+        XCTAssertFalse(post.contains("github.com"), "Main X post should not include links")
+
+        let thread = ShareFormats.tweetThreadText(manifest: manifest)
+        XCTAssertTrue(thread.contains("POST THIS"))
+        XCTAssertTrue(thread.contains("github.com"))
+        XCTAssertTrue(thread.contains("@AI_Andrew"))
+    }
+
+    func testPresetLabelsAreSelfDescribing() {
+        XCTAssertEqual(MatrixPreset.all[0].label, "Greedy GPU")
+        XCTAssertEqual(MatrixPreset.all[0].subtitle, "topK=1 · GPU")
     }
 
     func testPresetCount() {

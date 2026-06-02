@@ -1,43 +1,65 @@
 # Benchmark methodology
 
-Edge Lab’s experiment matrix is designed for **reproducible, shareable** on-device runs.
+Edge Lab’s experiment matrix is a **lab instrument**: fixed presets, exported settings, reproducible JSON. You do not need Google’s closed AI Edge Gallery app to interpret results.
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|--------|
 | Decode cap | 256 tokens (hard stop in stream loop) |
-| Warmup | One `"Hi"` turn, then `resetConversation()` |
-| Benchmark turn | Fixed long prefill prompt (~256 tokens) |
-| SDK | LiteRT-LM **v0.12.0** |
+| Warmup | One `"Hi"` turn (turn 1 — primes `BenchmarkInfo`) |
+| Benchmark | Same session as warmup (turn 2 — **no** reset between warmup and benchmark) |
+| SDK | LiteRT-LM **v0.12.0** (SPM revision `aeefa9b`) |
 | Benchmark flag | `ExperimentalFlags.enableBenchmark = true` |
 
 ## Per-preset flow
 
-1. **One model load per backend group** — GPU presets 1–2 share a single load; CPU presets 3–4 share another. Only sampler settings change between paired presets (faster, fairer comparisons).
-2. Apply preset sampler (topK / topP / temperature) and `resetConversation()`.
-3. Initialize backend (GPU preferred; CPU forced for CPU presets; fallback on failure) when the backend group changes.
-4. **Warmup** on the current session (turn 1 — primes `BenchmarkInfo`).
-5. **Benchmark on the same session** (turn 2 — do not reset between warmup and benchmark).
-6. Stream benchmark prompt; stop after 256 tokens.
-7. Read `BenchmarkInfo` and device thermal/memory snapshots.
+1. **One model load per backend group** — Greedy + Sampled GPU share one load; Greedy + Sampled CPU share another. Only sampler changes between paired presets.
+2. When the backend group changes, initialize GPU or CPU (CPU presets use `forceCPU`).
+3. Warmup on the current session.
+4. Benchmark on the **same** session.
+5. Stream the fixed prefill prompt; stop after 256 decode tokens.
+6. Read `BenchmarkInfo`, thermal, and memory snapshots into the manifest.
 
-## Presets
+## Presets (UI labels)
 
-- **Gallery greedy** — topK=1, GPU: comparable culture to AI Edge Gallery greedy benches.
-- **SDK default** — topK=64, topP=0.95: typical LiteRT-LM sampling defaults.
-- **CPU baseline / CPU sampled** — same samplers on CPU backend.
+| UI label | `preset_id` | Sampler | Backend |
+|----------|-------------|---------|---------|
+| Greedy GPU | `gallery_greedy_gpu` | topK=1 | GPU |
+| Sampled GPU | `sdk_default_gpu` | topK=64, topP=0.95 | GPU |
+| Greedy CPU | `cpu_greedy` | topK=1 | CPU |
+| Sampled CPU | `cpu_sampled` | topK=64, topP=0.95 | CPU |
+
+Legacy IDs keep schema compatibility; labels describe **what ran**, not a closed app.
+
+## Verifying GPU vs CPU
+
+Trust the manifest, not vibes:
+
+| Signal | Real GPU | Real CPU | CPU preset, GPU fallback |
+|--------|----------|----------|---------------------------|
+| `requested_backend` | gpu | cpu | cpu |
+| `backend` | gpu | cpu | gpu |
+| `did_fallback` | false | false | **true** |
+| Decode tok/s (typical) | tens+ | ~single digits | GPU-class speed |
+| Wall clock (256 decode) | ~7–15 s warm | ~50–60 s | GPU-class |
+
+Xcode logs should show `MainExecutorSettings: backend: GPU` or `CPU` for the active group. `SessionBasic::CancelProcess` after warmup is expected (token cap).
+
+## Sampler / Metal notes
+
+You may see `Metal sampler not available, falling back to statically linked C API` in logs. That affects **how** tokens are sampled on GPU, not whether the GPU backend is active. Greedy (topK=1) and sampled (topK=64) can therefore differ in decode tok/s even on the same GPU load.
 
 ## Artisan / web `.litertlm` models
 
-Some bundles (e.g. `gemma-4-E2B-it-web.litertlm`) only ship **GPU_ARTISAN** weights. CPU init may fail with `TF_LITE_PREFILL_DECODE not found`; Edge Lab then **falls back to GPU** and sets `did_fallback: true` with `requested_backend: cpu` in the manifest. Compare CPU presets only on models that include CPU-capable sections.
+Some bundles (e.g. `gemma-4-E2B-it-web.litertlm`) only ship **GPU_ARTISAN** weights. CPU init may fail with `TF_LITE_PREFILL_DECODE not found`; Edge Lab falls back to GPU (`did_fallback: true`). Compare CPU presets on models that include CPU sections (e.g. `gemma-4-E2B-it.litertlm`).
 
 ## Caveats
 
 - Numbers vary with thermal state, background apps, and iOS version.
-- Re-run matrix when comparing SDK or model updates; attach exported JSON for issues.
-- Gallery iOS source is not public; Edge Lab does not claim byte-for-byte parity with their internal build.
+- `init_time_seconds` reflects engine load (dominant on first GPU preset); use `wall_clock_seconds` for per-preset duration.
+- Re-run when comparing SDK or model updates; attach exported JSON for issues.
 
 ## Thinking / reasoning models
 
-LiteRT-LM **v0.12.0** Swift APIs used by Edge Lab do not expose a separate “thinking” or chain-of-thought toggle. If Google adds thinking-mode controls to `ConversationConfig` or sampler APIs, Edge Lab can add a matrix preset in a future release. Until then, document model-specific thinking behavior in your published manifest notes.
+LiteRT-LM v0.12.0 Swift APIs used by Edge Lab do not expose a separate thinking toggle. If Google adds one, Edge Lab can add a preset in a future release.

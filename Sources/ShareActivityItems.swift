@@ -110,7 +110,20 @@ enum MatrixShareBuilder {
                     )
                 )
             case .tweet:
-                items.append(ShareFormats.tweetText(manifest: manifest))
+                items.append(ShareFormats.tweetPostText(manifest: manifest))
+            case .tweetThread:
+                let text = ShareFormats.tweetThreadText(manifest: manifest)
+                let data = Data(text.utf8)
+                items.append(
+                    ManifestShareItem(
+                        title: "Edge Lab X thread",
+                        text: text,
+                        data: data,
+                        contentType: .plainText,
+                        filename: archive.map { $0.jsonURL.deletingPathExtension().lastPathComponent + "-x-thread.txt" }
+                            ?? "edge-lab-x-thread.txt"
+                    )
+                )
             case .copySummary:
                 items.append(ShareFormats.shortSummary(manifest: manifest))
             }

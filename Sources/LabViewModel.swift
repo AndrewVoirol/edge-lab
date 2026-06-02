@@ -176,10 +176,16 @@ final class LabViewModel {
         case .csv:
             ShareFormats.copyToPasteboard(ShareFormats.csvReport(manifest: manifest))
         case .tweet:
-            ShareFormats.copyToPasteboard(ShareFormats.tweetText(manifest: manifest))
+            ShareFormats.copyToPasteboard(ShareFormats.tweetPostText(manifest: manifest))
+        case .tweetThread:
+            ShareFormats.copyToPasteboard(ShareFormats.tweetThreadText(manifest: manifest))
         case .copySummary:
             ShareFormats.copyToPasteboard(ShareFormats.shortSummary(manifest: manifest))
         }
-        copiedToast = "\(kind.title) copied"
+        copiedToast = kind == .tweet
+            ? "X post copied (no link — add JSON + thread replies)"
+            : kind == .tweetThread
+                ? "3-tweet thread copied"
+                : "\(kind.title) copied"
     }
 }

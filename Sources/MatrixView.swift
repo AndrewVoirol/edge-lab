@@ -119,7 +119,7 @@ struct MatrixView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 4) {
-            headerCell("Preset", width: 80)
+            headerCell("Preset", width: 92)
             headerCell("BE", width: 32)
             headerCell("Dec", width: 48)
             headerCell("Wall", width: 40)
@@ -139,10 +139,16 @@ struct MatrixView: View {
     private func resultRow(_ row: MatrixRunResult) -> some View {
         let isBest = row.succeeded && row.decodeTokensPerSecond == bestDecode
         return HStack(spacing: 4) {
-            Text(row.preset.label)
-                .font(.caption)
-                .lineLimit(1)
-                .frame(width: 80, alignment: .leading)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.preset.label)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                Text(row.preset.subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(width: 92, alignment: .leading)
             Text(backendLabel(row))
                 .font(.caption2.monospaced())
                 .frame(width: 32, alignment: .leading)
@@ -200,10 +206,10 @@ struct MatrixView: View {
             .buttonStyle(.borderedProminent)
 
             HStack(spacing: 8) {
+                copyButton("X post", kind: .tweet)
+                copyButton("Thread", kind: .tweetThread)
                 copyButton("JSON", kind: .json)
-                copyButton("Report", kind: .markdown)
                 copyButton("CSV", kind: .csv)
-                copyButton("Tweet", kind: .tweet)
             }
         }
     }
