@@ -3,8 +3,8 @@ import SwiftUI
 struct MatrixView: View {
     @Bindable var viewModel: LabViewModel
     @State private var showShareSheet = false
-    @State private var shareURLs: [URL] = []
-    @State private var showExportPicker = false
+    @State private var shareItems: [Any] = []
+    @State private var showShareOptions = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -66,19 +66,14 @@ struct MatrixView: View {
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            if !shareURLs.isEmpty {
-                ShareSheet(items: shareURLs)
+            if !shareItems.isEmpty {
+                ShareSheet(items: shareItems)
             }
         }
-        .confirmationDialog("Share results", isPresented: $showExportPicker, titleVisibility: .visible) {
-            Button("Share everything (JSON + Markdown + CSV)") {
-                presentShare(kinds: [.json, .markdown, .csv])
+        .sheet(isPresented: $showShareOptions) {
+            ShareOptionsSheet(viewModel: viewModel) { kinds in
+                presentShare(kinds: kinds)
             }
-            Button("JSON manifest") { presentShare(kinds: [.json]) }
-            Button("Markdown report") { presentShare(kinds: [.markdown]) }
-            Button("CSV for spreadsheets") { presentShare(kinds: [.csv]) }
-            Button("Tweet text file") { presentShare(kinds: [.tweet]) }
-            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -191,13 +186,13 @@ struct MatrixView: View {
                 .font(.subheadline.bold())
 
             if viewModel.lastArchive != nil {
-                Label("Saved under Files → On My iPhone → Edge Lab → EdgeLabRuns (JSON, MD, CSV)", systemImage: "folder")
+                Label("Saved under Files → On My iPhone → Edge Lab → EdgeLabRuns", systemImage: "folder")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Button {
-                showExportPicker = true
+                showShareOptions = true
             } label: {
                 Label("Share…", systemImage: "square.and.arrow.up")
                     .frame(maxWidth: .infinity)
@@ -223,7 +218,7 @@ struct MatrixView: View {
 
     private func presentShare(kinds: [ShareExportKind]) {
         do {
-            shareURLs = try viewModel.shareURLs(for: kinds)
+            shareItems = try viewModel.shareActivityItems(for: kinds)
             showShareSheet = true
         } catch {
             viewModel.statusMessage = error.localizedDescription
@@ -235,7 +230,13 @@ struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.excludedActivityTypes = [
+            .assignToContact,
+            .addToReadingList,
+            .openInIBooks,
+        ]
+        return controller
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}

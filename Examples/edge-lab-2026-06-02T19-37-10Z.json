@@ -1,0 +1,128 @@
+{
+  "app" : "edge-lab",
+  "app_version" : "1.0",
+  "created_at" : "2026-06-02T19:37:10Z",
+  "decode_cap" : 256,
+  "device" : {
+    "marketing_name" : "iPhone 16 Pro Max",
+    "model_identifier" : "iPhone17,2",
+    "os_version" : "Version 26.6 (Build 23G5028e)"
+  },
+  "litert_lm_version" : "0.12.0",
+  "matrix" : [
+    {
+      "backend" : "gpu",
+      "did_fallback" : false,
+      "metrics" : {
+        "decode_tokens" : 256,
+        "decode_tokens_per_second" : 32.68255434960231,
+        "init_time_seconds" : 4.014182,
+        "median_token_latency_ms" : 29.58500385284424,
+        "memory_delta_mb" : -4.03125,
+        "memory_end_mb" : 5723.747383117676,
+        "memory_start_mb" : 5727.778633117676,
+        "prefill_token_count" : 111,
+        "prefill_tokens_per_second" : 264.20142145125124,
+        "thermal_end" : "nominal",
+        "thermal_start" : "nominal",
+        "ttft_seconds" : 1.0755173635000002,
+        "wall_clock_seconds" : 11.320958971977234
+      },
+      "preset_id" : "gallery_greedy_gpu",
+      "preset_label" : "Gallery greedy",
+      "requested_backend" : "gpu",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 1,
+        "topP" : 1
+      }
+    },
+    {
+      "backend" : "gpu",
+      "did_fallback" : false,
+      "metrics" : {
+        "decode_tokens" : 256,
+        "decode_tokens_per_second" : 33.80839247240774,
+        "init_time_seconds" : 4.014329,
+        "median_token_latency_ms" : 40.26097059249878,
+        "memory_delta_mb" : 19.03125,
+        "memory_end_mb" : 5722.466133117676,
+        "memory_start_mb" : 5703.434883117676,
+        "prefill_token_count" : 111,
+        "prefill_tokens_per_second" : 646.6873295891496,
+        "thermal_end" : "nominal",
+        "thermal_start" : "nominal",
+        "ttft_seconds" : 0.1398284545,
+        "wall_clock_seconds" : 11.10204803943634
+      },
+      "preset_id" : "sdk_default_gpu",
+      "preset_label" : "SDK default",
+      "requested_backend" : "gpu",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 64,
+        "topP" : 0.95
+      }
+    },
+    {
+      "backend" : "gpu",
+      "did_fallback" : true,
+      "metrics" : {
+        "decode_tokens" : 256,
+        "decode_tokens_per_second" : 35.95252958729765,
+        "init_time_seconds" : 2.5559089999999998,
+        "median_token_latency_ms" : 40.5924916267395,
+        "memory_delta_mb" : -18.453125,
+        "memory_end_mb" : 5888.075439453125,
+        "memory_start_mb" : 5906.528564453125,
+        "prefill_token_count" : 111,
+        "prefill_tokens_per_second" : 627.799647074793,
+        "thermal_end" : "nominal",
+        "thermal_start" : "nominal",
+        "ttft_seconds" : 0.28407845449999997,
+        "wall_clock_seconds" : 12.70885694026947
+      },
+      "preset_id" : "cpu_greedy",
+      "preset_label" : "CPU baseline",
+      "requested_backend" : "cpu",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 1,
+        "topP" : 1
+      }
+    },
+    {
+      "backend" : "cpu",
+      "did_fallback" : false,
+      "metrics" : {
+        "decode_tokens" : 256,
+        "decode_tokens_per_second" : 33.72919138863081,
+        "init_time_seconds" : 2.556067,
+        "median_token_latency_ms" : 40.55100679397583,
+        "memory_delta_mb" : 18.359375,
+        "memory_end_mb" : 5887.653564453125,
+        "memory_start_mb" : 5869.294189453125,
+        "prefill_token_count" : 111,
+        "prefill_tokens_per_second" : 643.799227440927,
+        "thermal_end" : "nominal",
+        "thermal_start" : "nominal",
+        "ttft_seconds" : 0.13332390900000002,
+        "wall_clock_seconds" : 11.164430022239685
+      },
+      "preset_id" : "cpu_sampled",
+      "preset_label" : "CPU sampled",
+      "requested_backend" : "cpu",
+      "sampler" : {
+        "temperature" : 1,
+        "topK" : 64,
+        "topP" : 0.95
+      }
+    }
+  ],
+  "matrix_version" : "1",
+  "model" : {
+    "filename" : "gemma-4-E2B-it-web.litertlm"
+  },
+  "run_mode" : "full",
+  "schema_version" : "1.1"
+}

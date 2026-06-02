@@ -150,24 +150,17 @@ final class LabViewModel {
         return try ShareFormats.jsonData(manifest: manifest)
     }
 
-    func shareURLs(for kinds: [ShareExportKind]) throws -> [URL] {
+    func shareActivityItems(for kinds: [ShareExportKind]) throws -> [Any] {
         guard let manifest = lastManifest else {
             throw NSError(domain: "EdgeLab", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Run the matrix first.",
             ])
         }
-        if let archive = lastArchive {
-            let fileURLs = archive.urls(for: kinds.filter { $0 != .tweet && $0 != .copySummary })
-            if !fileURLs.isEmpty { return fileURLs }
-        }
-        return try kinds.compactMap { kind -> URL? in
-            switch kind {
-            case .tweet, .copySummary:
-                return try ShareFormats.writeTempFile(manifest: manifest, kind: kind)
-            default:
-                return try ShareFormats.writeTempFile(manifest: manifest, kind: kind)
-            }
-        }
+        return try MatrixShareBuilder.activityItems(
+            manifest: manifest,
+            kinds: kinds,
+            archive: lastArchive
+        )
     }
 
     func copyExport(_ kind: ShareExportKind) {
