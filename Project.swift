@@ -8,7 +8,7 @@ let project = Project(
     packages: [
         .remote(
             url: "https://github.com/google-ai-edge/LiteRT-LM.git",
-            requirement: .branch("main")
+            requirement: .revision("aeefa9bee065166ade2706ff9e25ba39ed063843")
         ),
     ],
     settings: .settings(
@@ -16,8 +16,6 @@ let project = Project(
             "DEVELOPMENT_TEAM": .string(teamId),
             "CODE_SIGN_STYLE": "Automatic",
             "SWIFT_VERSION": "5.0",
-            // LiteRT-LM uses -all_load via SPM unsafe linker flags (required for C++ bridge).
-            "DISABLE_UNSAFE_SWIFTPM_FLAGS_VALIDATION": "YES",
         ]
     ),
     targets: [

@@ -10,23 +10,21 @@ Google’s [AI Edge Gallery](https://github.com/google-ai-edge/gallery) ships a 
 
 ## Quick start
 
-1. Clone and generate the Xcode project:
+1. Clone and set up (resolves LiteRT-LM — **required**):
    ```bash
    git clone https://github.com/andrewvoirol/edge-lab.git
    cd edge-lab
-   tuist generate
-   open EdgeLab.xcworkspace
-   # Build with pinned SDK (required for LiteRT-LM):
-   xcodebuild -workspace EdgeLab.xcworkspace -scheme EdgeLab \
-     -onlyUsePackageVersionsFromResolvedFile \
-     -destination 'generic/platform=iOS' build
+   ./scripts/setup.sh
+   open EdgeLab.xcworkspace   # ← workspace, NOT EdgeLab.xcodeproj
    ```
+
+   **If you see `Missing package product 'LiteRTLM'`:** you opened the `.xcodeproj` or packages were not resolved. Run `./scripts/setup.sh` and open **`EdgeLab.xcworkspace`**.
 2. **Bring your model** (`.litertlm`) — see [docs/BYOM.md](docs/BYOM.md).
 3. Select a model → **Run Experiment Matrix** → **Export JSON manifest**.
 
 **Tested on:** iPhone 16 Pro Max · LiteRT-LM **v0.12.0** (SPM revision `aeefa9b`) · 256 decode tokens per preset
 
-> **Note:** `EdgeLab.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins LiteRT-LM to a known-good revision. After `tuist generate`, restore or keep that file before building.
+> **Note:** `.package.resolved` pins LiteRT-LM to revision `aeefa9b` (v0.12.0 XCFrameworks). `setup.sh` copies it into the workspace after `tuist generate`.
 
 ## What the matrix runs
 
