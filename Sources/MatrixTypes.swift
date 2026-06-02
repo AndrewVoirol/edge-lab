@@ -129,6 +129,7 @@ struct MatrixManifest: Codable, Sendable {
     struct MatrixEntry: Codable, Sendable {
         let presetId: String
         let presetLabel: String
+        let requestedBackend: String
         let backend: String
         let didFallback: Bool
         let sampler: SamplerInfo
@@ -138,6 +139,7 @@ struct MatrixManifest: Codable, Sendable {
         enum CodingKeys: String, CodingKey {
             case presetId = "preset_id"
             case presetLabel = "preset_label"
+            case requestedBackend = "requested_backend"
             case backend
             case didFallback = "did_fallback"
             case sampler
@@ -211,6 +213,7 @@ extension MatrixManifest {
                 MatrixEntry(
                     presetId: run.preset.id,
                     presetLabel: run.preset.label,
+                    requestedBackend: run.preset.forceCPU ? "cpu" : "gpu",
                     backend: run.activeBackend,
                     didFallback: run.didFallback,
                     sampler: MatrixEntry.SamplerInfo(

@@ -28,6 +28,10 @@ Edge Lab’s experiment matrix is designed for **reproducible, shareable** on-de
 - **SDK default** — topK=64, topP=0.95: typical LiteRT-LM sampling defaults.
 - **CPU baseline / CPU sampled** — same samplers on CPU backend.
 
+## Artisan / web `.litertlm` models
+
+Some bundles (e.g. `gemma-4-E2B-it-web.litertlm`) only ship **GPU_ARTISAN** weights. CPU init may fail with `TF_LITE_PREFILL_DECODE not found`; Edge Lab then **falls back to GPU** and sets `did_fallback: true` with `requested_backend: cpu` in the manifest. Compare CPU presets only on models that include CPU-capable sections.
+
 ## Caveats
 
 - Numbers vary with thermal state, background apps, and iOS version.

@@ -16,7 +16,7 @@ final class LabViewModel {
     var matrixProgressDetail: MatrixProgressUpdate?
     var matrixProgressLine: String = ""
     var lastManifest: MatrixManifest?
-    var lastArchivedRunURL: URL?
+    var lastArchive: RunArchiveBundle?
     var copiedToast: String?
 
     let engine = LabEngine()
@@ -77,7 +77,7 @@ final class LabViewModel {
         matrixResults = []
         matrixProgressDetail = nil
         matrixProgressLine = "Starting…"
-        lastArchivedRunURL = nil
+        lastArchive = nil
         statusMessage = "Running experiment matrix…"
         UIApplication.shared.isIdleTimerDisabled = true
 
@@ -111,14 +111,11 @@ final class LabViewModel {
             lastManifest = manifest
 
             let data = try ShareFormats.jsonData(manifest: manifest)
-            lastArchivedRunURL = try RunArchive.save(manifest: manifest, data: data)
+            lastArchive = try RunArchive.save(manifest: manifest, data: data)
 
             let successes = results.filter(\.succeeded).count
-            if lastArchivedRunURL != nil {
-                statusMessage = "Matrix complete: \(successes)/\(results.count). Saved to Files → EdgeLabRuns."
-            } else {
-                statusMessage = "Matrix complete: \(successes)/\(results.count) succeeded."
-            }
+            let fallbackNote = results.contains(where: \.didFallback) ? " (some CPU presets used GPU fallback)" : ""
+            statusMessage = "Matrix complete: \(successes)/\(results.count). Saved to Files → EdgeLabRuns.\(fallbackNote)"
         } catch is CancellationError {
             statusMessage = "Matrix cancelled."
         } catch {
@@ -159,7 +156,18 @@ final class LabViewModel {
                 NSLocalizedDescriptionKey: "Run the matrix first.",
             ])
         }
-        return try kinds.map { try ShareFormats.writeTempFile(manifest: manifest, kind: $0) }
+        if let archive = lastArchive {
+            let fileURLs = archive.urls(for: kinds.filter { $0 != .tweet && $0 != .copySummary })
+            if !fileURLs.isEmpty { return fileURLs }
+        }
+        return try kinds.compactMap { kind -> URL? in
+            switch kind {
+            case .tweet, .copySummary:
+                return try ShareFormats.writeTempFile(manifest: manifest, kind: kind)
+            default:
+                return try ShareFormats.writeTempFile(manifest: manifest, kind: kind)
+            }
+        }
     }
 
     func copyExport(_ kind: ShareExportKind) {

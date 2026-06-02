@@ -2,19 +2,111 @@
   "schema_version": "1.1",
   "app": "edge-lab",
   "app_version": "1.0.0",
-  "created_at": "REPLACE_AFTER_DEVICE_RUN",
+  "created_at": "2026-06-02T19:23:41Z",
   "matrix_version": "1",
   "run_mode": "full",
   "device": {
     "model_identifier": "iPhone17,2",
     "marketing_name": "iPhone 16 Pro Max",
-    "os_version": "REPLACE_WITH_YOUR_IOS_VERSION"
+    "os_version": "Version 26.6 (Build 23G5028e)"
   },
   "model": {
-    "filename": "REPLACE_WITH_YOUR_MODEL.litertlm"
+    "filename": "gemma-4-E2B-it-web.litertlm"
   },
   "litert_lm_version": "0.12.0",
   "decode_cap": 256,
-  "matrix": [],
-  "_comment": "After your completed matrix: Share → JSON, or copy from Files/EdgeLabRuns, and replace this file before publishing."
+  "matrix": [
+    {
+      "preset_id": "gallery_greedy_gpu",
+      "preset_label": "Gallery greedy",
+      "requested_backend": "gpu",
+      "backend": "gpu",
+      "did_fallback": false,
+      "sampler": { "topK": 1, "topP": 1.0, "temperature": 1.0 },
+      "metrics": {
+        "decode_tokens_per_second": 31.55,
+        "prefill_tokens_per_second": 259.81,
+        "ttft_seconds": 1.14,
+        "init_time_seconds": 4.72,
+        "prefill_token_count": 111,
+        "decode_tokens": 256,
+        "wall_clock_seconds": 11.66,
+        "median_token_latency_ms": 29.59,
+        "memory_start_mb": 5727.65,
+        "memory_end_mb": 5722.51,
+        "thermal_start": "nominal",
+        "thermal_end": "nominal",
+        "memory_delta_mb": -5.14
+      }
+    },
+    {
+      "preset_id": "sdk_default_gpu",
+      "preset_label": "SDK default",
+      "requested_backend": "gpu",
+      "backend": "gpu",
+      "did_fallback": false,
+      "sampler": { "topK": 64, "topP": 0.95, "temperature": 1.0 },
+      "metrics": {
+        "decode_tokens_per_second": 25.01,
+        "prefill_tokens_per_second": 603.03,
+        "ttft_seconds": 0.13,
+        "init_time_seconds": 4.72,
+        "prefill_token_count": 111,
+        "decode_tokens": 256,
+        "wall_clock_seconds": 11.39,
+        "median_token_latency_ms": 40.98,
+        "memory_start_mb": 5702.47,
+        "memory_end_mb": 5721.78,
+        "thermal_start": "nominal",
+        "thermal_end": "nominal",
+        "memory_delta_mb": 19.31
+      }
+    },
+    {
+      "preset_id": "cpu_greedy",
+      "preset_label": "CPU baseline",
+      "requested_backend": "cpu",
+      "backend": "gpu",
+      "did_fallback": true,
+      "sampler": { "topK": 1, "topP": 1.0, "temperature": 1.0 },
+      "metrics": {
+        "decode_tokens_per_second": 36.84,
+        "prefill_tokens_per_second": 637.41,
+        "ttft_seconds": 0.16,
+        "init_time_seconds": 2.53,
+        "prefill_token_count": 111,
+        "decode_tokens": 256,
+        "wall_clock_seconds": 12.63,
+        "median_token_latency_ms": 40.69,
+        "memory_start_mb": 5886.18,
+        "memory_end_mb": 5863.89,
+        "thermal_start": "nominal",
+        "thermal_end": "nominal",
+        "memory_delta_mb": -22.30
+      }
+    },
+    {
+      "preset_id": "cpu_sampled",
+      "preset_label": "CPU sampled",
+      "requested_backend": "cpu",
+      "backend": "cpu",
+      "did_fallback": false,
+      "sampler": { "topK": 64, "topP": 0.95, "temperature": 1.0 },
+      "metrics": {
+        "decode_tokens_per_second": 33.05,
+        "prefill_tokens_per_second": 635.47,
+        "ttft_seconds": 0.12,
+        "init_time_seconds": 2.53,
+        "prefill_token_count": 111,
+        "decode_tokens": 256,
+        "wall_clock_seconds": 11.11,
+        "median_token_latency_ms": 40.48,
+        "memory_start_mb": 5845.18,
+        "memory_end_mb": 5863.54,
+        "thermal_start": "nominal",
+        "thermal_end": "nominal",
+        "memory_delta_mb": 18.36
+      }
+    }
+  ]
 }

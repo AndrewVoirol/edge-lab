@@ -148,7 +148,7 @@ struct MatrixView: View {
                 .font(.caption)
                 .lineLimit(1)
                 .frame(width: 80, alignment: .leading)
-            Text(row.activeBackend.uppercased())
+            Text(backendLabel(row))
                 .font(.caption2.monospaced())
                 .frame(width: 32, alignment: .leading)
             if row.succeeded {
@@ -175,6 +175,12 @@ struct MatrixView: View {
         .background(isBest ? Color.green.opacity(0.08) : Color.clear)
     }
 
+    private func backendLabel(_ row: MatrixRunResult) -> String {
+        let tag = row.activeBackend.uppercased()
+        if row.didFallback { return "↺\(tag)" }
+        return tag == "GPU" ? "GPU" : "CPU"
+    }
+
     private var bestDecode: Double {
         viewModel.matrixResults.filter(\.succeeded).map(\.decodeTokensPerSecond).max() ?? 0
     }
@@ -184,8 +190,8 @@ struct MatrixView: View {
             Text("Share results")
                 .font(.subheadline.bold())
 
-            if viewModel.lastArchivedRunURL != nil {
-                Label("Also saved under Files → On My iPhone → Edge Lab → EdgeLabRuns", systemImage: "folder")
+            if viewModel.lastArchive != nil {
+                Label("Saved under Files → On My iPhone → Edge Lab → EdgeLabRuns (JSON, MD, CSV)", systemImage: "folder")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
