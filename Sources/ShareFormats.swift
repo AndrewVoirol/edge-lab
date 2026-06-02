@@ -99,8 +99,13 @@ enum ShareFormats {
         }
 
         let model = manifest.model.filename
+        let fallbackNote = manifest.matrix.contains(where: { $0.didFallback })
+            ? " (some CPU presets used GPU fallback)"
+            : ""
         return """
-        Edge Lab: \(bestLine) \(manifest.device.marketingName), \(model), fully local BYOM .litertlm — no cloud. JSON + report in 🧵
+        Edge Lab: \(bestLine) \(manifest.device.marketingName), \(model)\(fallbackNote) — fully local BYOM .litertlm, no cloud.
+
+        Ran yours? Tag @AI_Andrew with your manifest.
 
         https://github.com/AndrewVoirol/edge-lab · https://ableandrew.com
         """
