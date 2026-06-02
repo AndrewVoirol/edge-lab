@@ -8,7 +8,7 @@ Bring your `.litertlm` model, tap **Run Experiment Matrix**, get a versioned JSO
 
 ![Edge Lab experiment matrix](docs/images/matrix-screenshot.png)
 
-> Add a screenshot at `docs/images/matrix-screenshot.png` before your launch tweet.
+Launch copy: [docs/LAUNCH_THREAD.md](docs/LAUNCH_THREAD.md)
 
 ## Quick start
 
@@ -42,8 +42,8 @@ You do **not** need Google's closed [AI Edge Gallery](https://github.com/google-
 
 | Model | File | Highlight |
 |-------|------|-----------|
-| Gemma 4 E2B-it | [Examples/gemma-4-E2B-it_matrix_run.json](Examples/gemma-4-E2B-it_matrix_run.json) | ~40 GPU tok/s vs ~6 CPU tok/s |
-| Gemma 4 E2B-it-web | [Examples/sample_matrix_run.json](Examples/sample_matrix_run.json) | GPU_ARTISAN; CPU may fallback |
+| Gemma 4 E2B-it | [Examples/gemma-4-E2B-it_matrix_run.json](Examples/gemma-4-E2B-it_matrix_run.json) | ~40 GPU tok/s vs ~5 CPU tok/s (true CPU) |
+| Gemma 4 E2B-it-web | [Examples/gemma-4-E2B-it-web_matrix_run.json](Examples/gemma-4-E2B-it-web_matrix_run.json) | GPU_ARTISAN; CPU may ↺ GPU fallback |
 
 ## How this differs from AI Edge Gallery
 

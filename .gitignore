@@ -13,3 +13,6 @@ Derived/
 
 # Xcode user state
 xcuserdata/
+
+# Local device pulls (use scripts/pull-device-runs.sh)
+docs/device-pull/
