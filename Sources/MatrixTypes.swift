@@ -67,7 +67,12 @@ struct MatrixRunResult: Identifiable, Sendable {
     let prefillTokensPerSecond: Double
     let ttftSeconds: Double
     let initTimeSeconds: Double
+    let prefillTokenCount: Int
     let decodeTokens: Int
+    let wallClockSeconds: Double
+    let medianTokenLatencyMs: Double
+    let memoryStartMB: Double
+    let memoryEndMB: Double
     let thermalStart: ThermalLevel
     let thermalEnd: ThermalLevel
     let memoryDeltaMB: Double
@@ -83,16 +88,38 @@ struct MatrixManifest: Codable, Sendable {
     let app: String
     let appVersion: String
     let createdAt: String
+    let matrixVersion: String
+    let runMode: String
     let device: DeviceInfo
     let model: ModelInfo
     let litertLmVersion: String
     let decodeCap: Int
     let matrix: [MatrixEntry]
 
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case app
+        case appVersion = "app_version"
+        case createdAt = "created_at"
+        case matrixVersion = "matrix_version"
+        case runMode = "run_mode"
+        case device
+        case model
+        case litertLmVersion = "litert_lm_version"
+        case decodeCap = "decode_cap"
+        case matrix
+    }
+
     struct DeviceInfo: Codable, Sendable {
         let modelIdentifier: String
         let marketingName: String
         let osVersion: String
+
+        enum CodingKeys: String, CodingKey {
+            case modelIdentifier = "model_identifier"
+            case marketingName = "marketing_name"
+            case osVersion = "os_version"
+        }
     }
 
     struct ModelInfo: Codable, Sendable {
@@ -107,6 +134,15 @@ struct MatrixManifest: Codable, Sendable {
         let sampler: SamplerInfo
         let metrics: MetricsInfo?
 
+        enum CodingKeys: String, CodingKey {
+            case presetId = "preset_id"
+            case presetLabel = "preset_label"
+            case backend
+            case didFallback = "did_fallback"
+            case sampler
+            case metrics
+        }
+
         struct SamplerInfo: Codable, Sendable {
             let topK: Int
             let topP: Float
@@ -118,10 +154,31 @@ struct MatrixManifest: Codable, Sendable {
             let prefillTokensPerSecond: Double
             let ttftSeconds: Double
             let initTimeSeconds: Double
+            let prefillTokenCount: Int
             let decodeTokens: Int
+            let wallClockSeconds: Double
+            let medianTokenLatencyMs: Double
+            let memoryStartMB: Double
+            let memoryEndMB: Double
             let thermalStart: String
             let thermalEnd: String
             let memoryDeltaMB: Double
+
+            enum CodingKeys: String, CodingKey {
+                case decodeTokensPerSecond = "decode_tokens_per_second"
+                case prefillTokensPerSecond = "prefill_tokens_per_second"
+                case ttftSeconds = "ttft_seconds"
+                case initTimeSeconds = "init_time_seconds"
+                case prefillTokenCount = "prefill_token_count"
+                case decodeTokens = "decode_tokens"
+                case wallClockSeconds = "wall_clock_seconds"
+                case medianTokenLatencyMs = "median_token_latency_ms"
+                case memoryStartMB = "memory_start_mb"
+                case memoryEndMB = "memory_end_mb"
+                case thermalStart = "thermal_start"
+                case thermalEnd = "thermal_end"
+                case memoryDeltaMB = "memory_delta_mb"
+            }
         }
     }
 }
@@ -134,10 +191,12 @@ extension MatrixManifest {
     ) -> MatrixManifest {
         let formatter = ISO8601DateFormatter()
         return MatrixManifest(
-            schemaVersion: "1.0",
+            schemaVersion: "1.1",
             app: "edge-lab",
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
             createdAt: formatter.string(from: Date()),
+            matrixVersion: "1",
+            runMode: "full",
             device: DeviceInfo(
                 modelIdentifier: DeviceContext.machineIdentifier,
                 marketingName: DeviceContext.marketingName,
@@ -163,7 +222,12 @@ extension MatrixManifest {
                             prefillTokensPerSecond: run.prefillTokensPerSecond,
                             ttftSeconds: run.ttftSeconds,
                             initTimeSeconds: run.initTimeSeconds,
+                            prefillTokenCount: run.prefillTokenCount,
                             decodeTokens: run.decodeTokens,
+                            wallClockSeconds: run.wallClockSeconds,
+                            medianTokenLatencyMs: run.medianTokenLatencyMs,
+                            memoryStartMB: run.memoryStartMB,
+                            memoryEndMB: run.memoryEndMB,
                             thermalStart: run.thermalStart.rawValue,
                             thermalEnd: run.thermalEnd.rawValue,
                             memoryDeltaMB: run.memoryDeltaMB

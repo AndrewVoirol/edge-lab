@@ -14,9 +14,9 @@ Edge Lab’s experiment matrix is designed for **reproducible, shareable** on-de
 
 ## Per-preset flow
 
-1. Load model with preset sampler (topK / topP / temperature).
-2. Initialize backend (GPU preferred; CPU forced for CPU presets; fallback on failure).
-3. `resetConversation()` on the loaded engine.
+1. **One model load per backend group** — GPU presets 1–2 share a single load; CPU presets 3–4 share another. Only sampler settings change between paired presets (faster, fairer comparisons).
+2. Apply preset sampler (topK / topP / temperature) and `resetConversation()`.
+3. Initialize backend (GPU preferred; CPU forced for CPU presets; fallback on failure) when the backend group changes.
 4. Warmup inference (primes `BenchmarkInfo` — nil on first turn without warmup).
 5. `resetConversation()` again for a clean context.
 6. Stream benchmark prompt; stop after 256 tokens.
@@ -33,3 +33,7 @@ Edge Lab’s experiment matrix is designed for **reproducible, shareable** on-de
 - Numbers vary with thermal state, background apps, and iOS version.
 - Re-run matrix when comparing SDK or model updates; attach exported JSON for issues.
 - Gallery iOS source is not public; Edge Lab does not claim byte-for-byte parity with their internal build.
+
+## Thinking / reasoning models
+
+LiteRT-LM **v0.12.0** Swift APIs used by Edge Lab do not expose a separate “thinking” or chain-of-thought toggle. If Google adds thinking-mode controls to `ConversationConfig` or sampler APIs, Edge Lab can add a matrix preset in a future release. Until then, document model-specific thinking behavior in your published manifest notes.

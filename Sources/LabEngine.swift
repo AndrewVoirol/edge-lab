@@ -9,6 +9,7 @@ struct BackendInitResult: Sendable {
 enum LabEngineError: LocalizedError {
     case notInitialized
     case bothBackendsFailed(String)
+    case cancelled
 
     var errorDescription: String? {
         switch self {
@@ -16,6 +17,8 @@ enum LabEngineError: LocalizedError {
             return "Load a model before running the matrix."
         case .bothBackendsFailed(let message):
             return message
+        case .cancelled:
+            return "Matrix run was cancelled."
         }
     }
 }
@@ -26,13 +29,56 @@ final class LabEngine {
     private var conversation: Conversation?
     private var activeSamplerConfig: SamplerConfig?
     private var activeInferenceTask: Task<Void, Never>?
+    private var loadedModelPath: String?
+    private var loadedUsesGPU: Bool?
 
     private(set) var lastBenchmarkInfo: BenchmarkInfo?
+    private(set) var lastTokenLatenciesMs: [Double] = []
     private(set) var lastThermalStart: ThermalLevel = .nominal
     private(set) var lastThermalEnd: ThermalLevel = .nominal
     private(set) var lastMemoryDeltaMB: Double = 0
+    private(set) var lastMemoryStartMB: Double = 0
+    private(set) var lastMemoryEndMB: Double = 0
 
     var isReady: Bool { conversation != nil }
+
+    /// Loads the model only when path or backend (GPU vs CPU) changes.
+    func ensureLoaded(
+        path: String,
+        preferGPU: Bool,
+        forceCPU: Bool,
+        samplerConfig: SamplerConfig?
+    ) async throws -> BackendInitResult {
+        try Task.checkCancellation()
+
+        ExperimentalFlags.optIntoExperimentalAPIs()
+        ExperimentalFlags.enableBenchmark = true
+
+        let targetGPU = forceCPU ? false : preferGPU
+
+        if let loadedModelPath,
+           loadedModelPath == path,
+           let loadedUsesGPU,
+           loadedUsesGPU == targetGPU,
+           engine != nil
+        {
+            try await applySampler(samplerConfig)
+            return BackendInitResult(
+                activeBackend: targetGPU ? "gpu" : "cpu",
+                didFallback: false
+            )
+        }
+
+        let result = try await loadModel(
+            path: path,
+            preferGPU: preferGPU,
+            forceCPU: forceCPU,
+            samplerConfig: samplerConfig
+        )
+        loadedModelPath = path
+        loadedUsesGPU = targetGPU
+        return result
+    }
 
     func loadModel(
         path: String,
@@ -41,25 +87,28 @@ final class LabEngine {
         samplerConfig: SamplerConfig?
     ) async throws -> BackendInitResult {
         await shutdown()
-
-        ExperimentalFlags.optIntoExperimentalAPIs()
-        ExperimentalFlags.enableBenchmark = true
+        loadedModelPath = nil
+        loadedUsesGPU = nil
 
         activeSamplerConfig = samplerConfig
         let cacheDir = try makeCacheDirectory(for: path)
-
         let tryGPUFirst = forceCPU ? false : preferGPU
+
         do {
             try await initializeEngine(path: path, useGPU: tryGPUFirst, cacheDir: cacheDir, sampler: samplerConfig)
+            loadedModelPath = path
+            loadedUsesGPU = tryGPUFirst
             return BackendInitResult(
                 activeBackend: tryGPUFirst ? "gpu" : "cpu",
-                didFallback: !preferGPU && tryGPUFirst
+                didFallback: false
             )
         } catch {
             let primaryError = error.localizedDescription
             let fallbackGPU = !tryGPUFirst
             do {
                 try await initializeEngine(path: path, useGPU: fallbackGPU, cacheDir: cacheDir, sampler: samplerConfig)
+                loadedModelPath = path
+                loadedUsesGPU = fallbackGPU
                 return BackendInitResult(
                     activeBackend: fallbackGPU ? "gpu" : "cpu",
                     didFallback: true
@@ -70,6 +119,11 @@ final class LabEngine {
                 )
             }
         }
+    }
+
+    func applySampler(_ samplerConfig: SamplerConfig?) async throws {
+        activeSamplerConfig = samplerConfig
+        try await resetConversation()
     }
 
     func resetConversation() async throws {
@@ -86,16 +140,21 @@ final class LabEngine {
             }
         }
         lastBenchmarkInfo = nil
+        lastTokenLatenciesMs = []
 
         let config = ConversationConfig(samplerConfig: activeSamplerConfig)
         conversation = try await engine.createConversation(with: config)
     }
 
     func warmup() async throws {
-        for try await _ in streamMessage("Hi", maxTokens: 8) {}
+        for try await _ in streamMessage("Hi", maxTokens: 8, onToken: nil) {}
     }
 
-    func streamMessage(_ text: String, maxTokens: Int) -> AsyncThrowingStream<String, Error> {
+    func streamMessage(
+        _ text: String,
+        maxTokens: Int,
+        onToken: ((Int) -> Void)?
+    ) -> AsyncThrowingStream<String, Error> {
         guard let conversation else {
             return AsyncThrowingStream { $0.finish(throwing: LabEngineError.notInitialized) }
         }
@@ -114,21 +173,37 @@ final class LabEngine {
         let task = Task { @MainActor [conversation] in
             let start = DeviceContext.captureSnapshot()
             lastThermalStart = start.thermalLevel
+            lastMemoryStartMB = start.availableMemoryMB
+            var tokenTimestamps: [CFAbsoluteTime] = []
+            let inferenceStart = CFAbsoluteTimeGetCurrent()
             var tokenCount = 0
 
             do {
                 for try await chunk in conversation.sendMessageStream(Message(text)) {
+                    try Task.checkCancellation()
                     if Task.isCancelled { break }
                     if let first = chunk.contents.first, case .text(let text) = first {
-                        continuation.yield(text)
+                        tokenTimestamps.append(CFAbsoluteTimeGetCurrent())
                         tokenCount += 1
+                        onToken?(tokenCount)
+                        continuation.yield(text)
                         if tokenCount >= maxTokens { break }
                     }
                 }
 
                 let end = DeviceContext.captureSnapshot()
                 lastThermalEnd = end.thermalLevel
+                lastMemoryEndMB = end.availableMemoryMB
                 lastMemoryDeltaMB = end.availableMemoryMB - start.availableMemoryMB
+
+                var latencies: [Double] = []
+                if let first = tokenTimestamps.first {
+                    latencies.append((first - inferenceStart) * 1000)
+                    for i in 1..<tokenTimestamps.count {
+                        latencies.append((tokenTimestamps[i] - tokenTimestamps[i - 1]) * 1000)
+                    }
+                }
+                lastTokenLatenciesMs = latencies
 
                 lastBenchmarkInfo = try? conversation.getBenchmarkInfo()
                 continuation.finish()
@@ -138,6 +213,16 @@ final class LabEngine {
         }
         activeInferenceTask = task
         return stream
+    }
+
+    var medianTokenLatencyMs: Double {
+        guard !lastTokenLatenciesMs.isEmpty else { return 0 }
+        let sorted = lastTokenLatenciesMs.sorted()
+        let mid = sorted.count / 2
+        if sorted.count.isMultiple(of: 2) {
+            return (sorted[mid - 1] + sorted[mid]) / 2
+        }
+        return sorted[mid]
     }
 
     func shutdown() async {
@@ -152,6 +237,8 @@ final class LabEngine {
             conversation = nil
         }
         engine = nil
+        loadedModelPath = nil
+        loadedUsesGPU = nil
         lastBenchmarkInfo = nil
         activeSamplerConfig = nil
     }

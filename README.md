@@ -20,7 +20,7 @@ Google’s [AI Edge Gallery](https://github.com/google-ai-edge/gallery) ships a 
 
    **If you see `Missing package product 'LiteRTLM'`:** you opened the `.xcodeproj` or packages were not resolved. Run `./scripts/setup.sh` and open **`EdgeLab.xcworkspace`**.
 2. **Bring your model** (`.litertlm`) — see [docs/BYOM.md](docs/BYOM.md).
-3. Select a model → **Run Experiment Matrix** → **Export JSON manifest**.
+3. Select a model → **Run Experiment Matrix** → **Share…** (JSON + Markdown + CSV, or copy tweet text). Runs auto-save to **Files → Edge Lab → EdgeLabRuns**.
 
 **Tested on:** iPhone 16 Pro Max · LiteRT-LM **v0.12.0** (SPM revision `aeefa9b`) · 256 decode tokens per preset
 
@@ -35,7 +35,7 @@ Google’s [AI Edge Gallery](https://github.com/google-ai-edge/gallery) ships a 
 | CPU baseline | CPU | 1 |
 | CPU sampled | CPU | 64 |
 
-Each preset: conversation reset → warmup → benchmark prompt → **256 decode cap** → capture TTFT, tok/s, thermal. Methodology: [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
+Each preset: conversation reset → warmup → benchmark prompt → **256 decode cap** → capture TTFT, tok/s, wall clock, median token latency, thermal. GPU presets share one load; CPU presets share another. Methodology: [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 
 ## Export format
 

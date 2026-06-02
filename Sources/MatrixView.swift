@@ -1,49 +1,107 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct MatrixView: View {
     @Bindable var viewModel: LabViewModel
     @State private var showShareSheet = false
-    @State private var exportURL: URL?
+    @State private var shareURLs: [URL] = []
+    @State private var showExportPicker = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Experiment Matrix")
                 .font(.headline)
 
-            Button {
-                Task { await viewModel.runMatrix() }
-            } label: {
-                HStack {
-                    if viewModel.isRunningMatrix {
-                        ProgressView()
-                            .tint(.white)
+            HStack(spacing: 12) {
+                Button {
+                    viewModel.runMatrix()
+                } label: {
+                    HStack {
+                        if viewModel.isRunningMatrix {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                        Text(viewModel.isRunningMatrix ? "Running…" : "Run Experiment Matrix")
+                            .fontWeight(.semibold)
                     }
-                    Text(viewModel.isRunningMatrix ? "Running…" : "Run Experiment Matrix")
-                        .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.selectedModel == nil || viewModel.isRunningMatrix)
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.selectedModel == nil || viewModel.isRunningMatrix)
 
-            if !viewModel.matrixProgress.isEmpty {
-                Text(viewModel.matrixProgress)
+                if viewModel.isRunningMatrix {
+                    Button(role: .destructive) {
+                        viewModel.cancelMatrix()
+                    } label: {
+                        Image(systemName: "stop.fill")
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 12)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            if viewModel.isRunningMatrix, let detail = viewModel.matrixProgressDetail {
+                progressCard(detail)
+            } else if !viewModel.matrixProgressLine.isEmpty {
+                Text(viewModel.matrixProgressLine)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             if !viewModel.matrixResults.isEmpty {
                 resultsTable
-                exportButton
+                shareSection
+            }
+
+            if let toast = viewModel.copiedToast {
+                Text(toast)
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            viewModel.copiedToast = nil
+                        }
+                    }
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            if let exportURL {
-                ShareSheet(items: [exportURL])
+            if !shareURLs.isEmpty {
+                ShareSheet(items: shareURLs)
             }
         }
+        .confirmationDialog("Share results", isPresented: $showExportPicker, titleVisibility: .visible) {
+            Button("Share everything (JSON + Markdown + CSV)") {
+                presentShare(kinds: [.json, .markdown, .csv])
+            }
+            Button("JSON manifest") { presentShare(kinds: [.json]) }
+            Button("Markdown report") { presentShare(kinds: [.markdown]) }
+            Button("CSV for spreadsheets") { presentShare(kinds: [.csv]) }
+            Button("Tweet text file") { presentShare(kinds: [.tweet]) }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func progressCard(_ detail: MatrixProgressUpdate) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(viewModel.matrixProgressLine)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if detail.phase == .benchmark {
+                ProgressView(
+                    value: Double(detail.tokensGenerated),
+                    total: Double(detail.decodeCap)
+                )
+                .tint(.accentColor)
+            } else {
+                ProgressView()
+                    .tint(.accentColor)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private var resultsTable: some View {
@@ -66,11 +124,11 @@ struct MatrixView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 4) {
-            headerCell("Preset", width: 88)
-            headerCell("BE", width: 36)
-            headerCell("Dec", width: 52)
-            headerCell("TTFT", width: 44)
-            headerCell("Th", width: 36)
+            headerCell("Preset", width: 80)
+            headerCell("BE", width: 32)
+            headerCell("Dec", width: 48)
+            headerCell("Wall", width: 40)
+            headerCell("Th", width: 32)
         }
         .font(.caption2.bold())
         .foregroundStyle(.secondary)
@@ -89,21 +147,21 @@ struct MatrixView: View {
             Text(row.preset.label)
                 .font(.caption)
                 .lineLimit(1)
-                .frame(width: 88, alignment: .leading)
+                .frame(width: 80, alignment: .leading)
             Text(row.activeBackend.uppercased())
                 .font(.caption2.monospaced())
-                .frame(width: 36, alignment: .leading)
+                .frame(width: 32, alignment: .leading)
             if row.succeeded {
                 Text(String(format: "%.1f", row.decodeTokensPerSecond))
                     .font(.caption.monospacedDigit().bold())
                     .foregroundStyle(isBest ? .green : .primary)
-                    .frame(width: 52, alignment: .leading)
-                Text(String(format: "%.2f", row.ttftSeconds))
+                    .frame(width: 48, alignment: .leading)
+                Text(String(format: "%.0fs", row.wallClockSeconds))
                     .font(.caption2.monospacedDigit())
-                    .frame(width: 44, alignment: .leading)
+                    .frame(width: 40, alignment: .leading)
                 Text(row.thermalEnd.label.prefix(3))
                     .font(.caption2)
-                    .frame(width: 36, alignment: .leading)
+                    .frame(width: 32, alignment: .leading)
             } else {
                 Text("err")
                     .font(.caption2)
@@ -120,25 +178,45 @@ struct MatrixView: View {
         viewModel.matrixResults.filter(\.succeeded).map(\.decodeTokensPerSecond).max() ?? 0
     }
 
-    private var exportButton: some View {
-        Button {
-            shareManifest()
-        } label: {
-            Label("Export JSON manifest", systemImage: "square.and.arrow.up")
-                .frame(maxWidth: .infinity)
+    private var shareSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Share results")
+                .font(.subheadline.bold())
+
+            if viewModel.lastArchivedRunURL != nil {
+                Label("Also saved under Files → On My iPhone → Edge Lab → EdgeLabRuns", systemImage: "folder")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                showExportPicker = true
+            } label: {
+                Label("Share…", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+
+            HStack(spacing: 8) {
+                copyButton("JSON", kind: .json)
+                copyButton("Report", kind: .markdown)
+                copyButton("CSV", kind: .csv)
+                copyButton("Tweet", kind: .tweet)
+            }
         }
-        .buttonStyle(.bordered)
     }
 
-    private func shareManifest() {
+    private func copyButton(_ title: String, kind: ShareExportKind) -> some View {
+        Button(title) {
+            viewModel.copyExport(kind)
+        }
+        .buttonStyle(.bordered)
+        .font(.caption)
+    }
+
+    private func presentShare(kinds: [ShareExportKind]) {
         do {
-            let data = try viewModel.exportManifestData()
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            let name = "edge-lab-matrix-\(formatter.string(from: Date()).replacingOccurrences(of: ":", with: "")).json"
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
-            try data.write(to: url)
-            exportURL = url
+            shareURLs = try viewModel.shareURLs(for: kinds)
             showShareSheet = true
         } catch {
             viewModel.statusMessage = error.localizedDescription
