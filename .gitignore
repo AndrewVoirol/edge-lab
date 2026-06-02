@@ -1,0 +1,15 @@
+# Tuist / Xcode
+Derived/
+*.xcodeproj
+*.xcworkspace
+.tuist-cache/
+.build/
+
+# macOS
+.DS_Store
+
+# User models (large)
+*.litertlm
+
+# Xcode user state
+xcuserdata/
